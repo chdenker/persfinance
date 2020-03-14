@@ -38,7 +38,8 @@ def print_all_entries(db_cursor):
 		amount = float(int(entry[2]) / 100.0)
 		category = cat_names[int(entry[3]) - 1]
 		comment = entry[4]
-		print(str(entry_id) + '\t' + date + '\t' + str(amount) + '\t' + category + '\t' + comment)
+		print("%d    %s    %8.2f    %15s    %s" % ( entry_id, date, amount, category, comment), end="")
+	print()
 
 def new_entry_dialog() -> list:
 	entry_str_list = []
