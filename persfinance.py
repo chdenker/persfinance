@@ -41,6 +41,9 @@ def print_all_entries(db_cursor):
 		print("%d    %s    %8.2f    %15s    %s" % ( entry_id, date, amount, category, comment), end="")
 	print()
 
+def print_statistics(db_cursor):
+	pass
+
 def new_entry_dialog() -> list:
 	entry_str_list = []
 	datestr = input("Date: ")
@@ -76,7 +79,7 @@ def main():
 	elif args.print:
 		print_all_entries(db_cursor)
 	elif args.statistics:
-		print("stat")
+		print_statistics(db_cursor)
 
 	db_con.commit()
 	db_con.close()
