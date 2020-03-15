@@ -1,5 +1,7 @@
 import sqlite3
 import argparse
+import datetime
+import calendar
 
 def add_entry(db_cursor, date: str, amount: int, category: str, comment: str = None):
 	# Try to get the ID of the specified category
@@ -9,6 +11,7 @@ def add_entry(db_cursor, date: str, amount: int, category: str, comment: str = N
 	cat_id = db_cursor.fetchone()
 	if cat_id == None: # Category does not exist in DB yet, add it
 		sql = "INSERT INTO categories VALUES (NULL, '%s')" % category
+		db_cursor.execute(sql)
 		# Now, get the new category ID
 		sql = "SELECT id FROM categories WHERE categories.name == '%s'" % category
 		db_cursor.execute(sql)
@@ -19,17 +22,23 @@ def add_entry(db_cursor, date: str, amount: int, category: str, comment: str = N
 	sql = "INSERT INTO entries VALUES(NULL,'" + date + "', " + str(amount) + ", " + str(cat_id) + ", '" + comment + "')"
 	db_cursor.execute(sql)
 
-def print_all_entries(db_cursor):
-	# Get all category names from the DB as a list
+# Get all category names from the DB as a list of strings
+# indexed by the same index (with offset -1) used in the table of categories in the DB
+def fetch_category_names(db_cursor) -> list:
 	sql = "SELECT * FROM categories"
 	db_cursor.execute(sql)
 	cat_res = db_cursor.fetchall()
 	cat_names = []
 	for cat_pair in cat_res:
 		cat_names.append(cat_pair[1])
+	return cat_names
 	
+def print_all_entries(db_cursor):
+	cat_names = fetch_category_names(db_cursor)
+
 	# Get all entries from the DB as a list
-	sql = "SELECT * FROM entries"
+	# and print them
+	sql = "SELECT * FROM entries ORDER BY date(entries.date)"
 	db_cursor.execute(sql)
 	entries = db_cursor.fetchall()
 	for entry in entries:
@@ -38,15 +47,39 @@ def print_all_entries(db_cursor):
 		amount = float(int(entry[2]) / 100.0)
 		category = cat_names[int(entry[3]) - 1]
 		comment = entry[4]
-		print("%d    %s    %8.2f    %15s    %s" % ( entry_id, date, amount, category, comment), end="")
-	print()
+		print("%d    %s    %8.2f    %15s    %s\n" % ( entry_id, date, amount, category, comment), end="")
 
 def print_statistics(db_cursor):
-	pass
+	year_str = "2020"
+	print("%-20s %s\n" % ("YEAR: ", year_str))
+	for month in range(1, 13):
+		if month >= 1 and month <= 9:
+			month_str = "0" + str(month)
+		else:
+			month_str = str(month)
+		sql = """SELECT  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS total_month_income,
+                         SUM(CASE WHEN amount < 0 THEN amount ELSE 0 END) AS total_month_expenses,
+                         SUM(amount) AS total_month_sum
+                 FROM    entries
+                 WHERE   strftime("%%Y-%%m", entries.date) == "%s-%s"
+              """ % ( year_str, month_str )
+		db_cursor.execute(sql)
+		values = db_cursor.fetchone()
+		total_month_income = values[0]
+		total_month_expenses = values[1]
+		total_month_sum = values[2]
+		if total_month_income != None or total_month_expenses != None or total_month_sum != None:
+			print("%-20s %-10s" % ( "Month: ", calendar.month_name[month] ))
+			print("%-20s %8.2f" % ( "Total income: ", float(total_month_income) / 100.0 ))
+			print("%-20s %8.2f" % ( "Total expenses: ", float(total_month_expenses) / 100.0 ))
+			print("%-20s %8.2f" % ( "Sum: ", float(total_month_sum) / 100.0 ))
+			print()
 
 def new_entry_dialog() -> list:
 	entry_str_list = []
 	datestr = input("Date: ")
+	if datestr == "":
+		datestr = str(datetime.date.today())
 	entry_str_list.append(datestr)
 	amountstr = input("Amount: ")
 	entry_str_list.append(amountstr)
