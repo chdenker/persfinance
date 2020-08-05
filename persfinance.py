@@ -2,6 +2,7 @@ import sqlite3
 import argparse
 import datetime
 import calendar
+import sys
 
 def add_entry(db_cursor, date: str, amount: int, category: str, comment: str = None):
     # Try to get the ID of the specified category
@@ -20,6 +21,10 @@ def add_entry(db_cursor, date: str, amount: int, category: str, comment: str = N
 
     # Insert new entry into DB
     sql = "INSERT INTO entries VALUES(NULL,'" + date + "', " + str(amount) + ", " + str(cat_id) + ", '" + comment + "')"
+    db_cursor.execute(sql)
+
+def delete_entry(db_cursor, entry_id: int):
+    sql = "DELETE FROM entries WHERE id == '%s'" % entry_id
     db_cursor.execute(sql)
 
 # Get all category names from the DB as a list of strings
@@ -115,6 +120,7 @@ def main():
     mut_ex_args_group.add_argument("-c", "--create", help="create a new database (specified database_path will be used)", action="store_true")
     mut_ex_args_group.add_argument("-n", "--new", help="enter new entry", action="store_true")
     mut_ex_args_group.add_argument("-p", "--print", help="print all entries", action="store_true")
+    mut_ex_args_group.add_argument("-d", "--delete", metavar="ID", help="delete the entry with the given ID (if it exists)", type=int)
     mut_ex_args_group.add_argument("-s", "--statistics", help="print statistics", action="store_true")
     args = argparser.parse_args()
 
@@ -132,6 +138,13 @@ def main():
         create_database(db_cursor)
     elif args.print:
         print_all_entries(db_cursor)
+    elif args.delete: # args.delete is an integer (the given argument).. only >= 1 is a valid ID
+        entry_id = args.delete
+        if entry_id <= 0:
+            print("Invalid ID (must be >= 1)")
+            db_con.close()
+            sys.exit(-1)
+        delete_entry(db_cursor, entry_id)
     elif args.statistics:
         print_statistics(db_cursor)
 
