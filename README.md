@@ -25,7 +25,7 @@ chris@chris-TUXEDO:~/Programming/persfinance$ python3 persfinance.py -p test.db
 1    2020-03-01     1000.00             Income    
 3    2020-03-10       -4.00               Food    Döner
 2    2020-03-16      -13.19          Groceries    
-chris@chris-TUXEDO:~/Programming/persfinance$ python3 persfinance.py -s test.db
+chris@chris-TUXEDO:~/Programming/persfinance$ python3 persfinance.py -s 2020 test.db
 YEAR:                2020
 
 Month:               March     
