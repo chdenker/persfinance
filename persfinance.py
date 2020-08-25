@@ -54,8 +54,8 @@ def print_all_entries(db_cursor):
         comment = entry[4]
         print("%d    %s    %8.2f    %15s    %s\n" % ( entry_id, date, amount, category, comment), end="")
 
-def print_statistics(db_cursor):
-    year_str = "2020"
+def print_statistics(db_cursor, year: int):
+    year_str = str(year)
     print("%-20s %s\n" % ("YEAR: ", year_str))
     for month in range(1, 13):
         if month >= 1 and month <= 9:
@@ -121,7 +121,7 @@ def main():
     mut_ex_args_group.add_argument("-n", "--new", help="enter new entry", action="store_true")
     mut_ex_args_group.add_argument("-p", "--print", help="print all entries", action="store_true")
     mut_ex_args_group.add_argument("-d", "--delete", metavar="ID", help="delete the entry with the given ID (if it exists)", type=int)
-    mut_ex_args_group.add_argument("-s", "--statistics", help="print statistics", action="store_true")
+    mut_ex_args_group.add_argument("-s", "--statistics", metavar="YEAR", default=datetime.datetime.now().year, help="print statistics of the given year", type=int)
     args = argparser.parse_args()
 
     db_con = sqlite3.connect(args.database_path)
@@ -146,7 +146,12 @@ def main():
             sys.exit(-1)
         delete_entry(db_cursor, entry_id)
     elif args.statistics:
-        print_statistics(db_cursor)
+        year = args.statistics
+        if year < 0:
+            print("Invalid YEAR (must be > 0)")
+            db_con.close()
+            sys.exit(-1)
+        print_statistics(db_cursor, year)
 
     db_con.commit()
     db_con.close()
