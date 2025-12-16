@@ -23,6 +23,12 @@ def add_entry(db_cursor, date: str, amount: int, category: str, comment: str = N
     sql = "INSERT INTO entries VALUES(NULL,'" + date + "', " + str(amount) + ", " + str(cat_id) + ", '" + comment + "')"
     db_cursor.execute(sql)
 
+    # Print new entry
+    sql = "SELECT MAX(id) FROM entries"
+    db_cursor.execute(sql)
+    entry_id = db_cursor.fetchone()[0]
+    print("\n%d    %s    %8.2f    %15s    %s\n" % ( entry_id, date, float(amount) / 100.0, category, comment), end="")
+
 def delete_entry(db_cursor, entry_id: int):
     sql = "DELETE FROM entries WHERE id == '%s'" % entry_id
     db_cursor.execute(sql)
