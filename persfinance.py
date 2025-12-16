@@ -112,8 +112,49 @@ def create_database(db_cursor):
              )'''
     db_cursor.execute(sql)
 
+# Parses an amount string like "0.29 + 0.70"
+# and returns the number of total cents: 99
+def parse_amount_str(amountstr: str) -> int:
+    total_cents = 0
+    current_num_str = ""
+    sign = 1  # sign for the number being read
+    prev_ch = ""
+
+    for ch in amountstr:
+        if ch not in "+-. " and not ch.isdigit():
+            return None     # invalid input
+        if ch == " ":
+            continue
+
+        if ch in "+-":
+            if prev_ch == "+" or prev_ch == "-":
+                return None     # invalid input
+
+            # finish previous number if there is one
+            if current_num_str:
+                euros, _, cents = current_num_str.partition(".")
+                # normalize cents to exactly 2 digits
+                cents = (cents + "00")[:2]
+                total_cents += sign * (int(euros) * 100 + int(cents))
+                current_num_str = ""
+
+            # start new number with new sign
+            sign = -1 if ch == "-" else 1
+        else:
+            current_num_str += ch
+
+        prev_ch = ch
+
+    # handle the last number
+    if current_num_str:
+        euros, _, cents = current_num_str.partition(".")
+        cents = (cents + "00")[:2]
+        total_cents += sign * (int(euros) * 100 + int(cents))
+
+    return total_cents
+
 def main():
-    prog_description = "PersFinance | (2017 - 2020) written by Christopher Denker"
+    prog_description = "PersFinance | (2017 - 2025) written by Christopher Denker"
     argparser = argparse.ArgumentParser(description=prog_description)
     argparser.add_argument("database_path")
     mut_ex_args_group = argparser.add_mutually_exclusive_group()
@@ -130,7 +171,11 @@ def main():
     if args.new:
         entry_str_list = new_entry_dialog()
         date = entry_str_list[0]
-        amount = int(float(entry_str_list[1]) * 100)
+        amount = parse_amount_str(entry_str_list[1])
+        if amount == None:
+            print("Invalid amount!")
+            db_con.close()
+            sys.exit(-1)
         category = entry_str_list[2]
         comment = entry_str_list[3]
         add_entry(db_cursor, date, amount, category, comment)
